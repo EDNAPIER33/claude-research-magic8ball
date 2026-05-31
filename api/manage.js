@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv';
+import { kv as redis } from '@vercel/kv';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,23 +15,23 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    const answers = await kv.lrange('answers', 0, -1);
+    const answers = await redis.lrange('answers', 0, -1);
     return res.status(200).json({ answers: answers || [] });
   }
 
   if (req.method === 'POST') {
     const { answer } = req.body;
     if (!answer?.trim()) return res.status(400).json({ error: 'Answer required' });
-    await kv.rpush('answers', answer.trim());
-    const answers = await kv.lrange('answers', 0, -1);
+    await redis.rpush('answers', answer.trim());
+    const answers = await redis.lrange('answers', 0, -1);
     return res.status(200).json({ answers });
   }
 
   if (req.method === 'DELETE') {
     const { answer } = req.body;
     if (!answer) return res.status(400).json({ error: 'Answer required' });
-    await kv.lrem('answers', 0, answer);
-    const answers = await kv.lrange('answers', 0, -1);
+    await redis.lrem('answers', 0, answer);
+    const answers = await redis.lrange('answers', 0, -1);
     return res.status(200).json({ answers });
   }
 

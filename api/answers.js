@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv';
+import { kv as redis } from '@vercel/kv';
 
 const DEFAULTS = [
   "It is certain.",
@@ -28,6 +28,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const answers = await kv.lrange('answers', 0, -1);
+  const answers = await redis.lrange('answers', 0, -1);
   return res.status(200).json({ answers: answers?.length ? answers : DEFAULTS });
 }
