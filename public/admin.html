@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>8-Ball Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      letter-spacing: 0.1em;
+      color: #7eb0ff;
+      margin-bottom: 0.3rem;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: #555;
+      margin-bottom: 2rem;
+    }
+
+    /* Login */
+    #loginPanel {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 2rem;
+    }
+
+    #loginPanel label {
+      display: block;
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-bottom: 0.5rem;
+    }
+
+    #loginPanel input {
+      width: 100%;
+      padding: 0.65rem 1rem;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    #loginPanel input:focus { outline: none; border-color: #7eb0ff; }
+
+    button {
+      padding: 0.65rem 1.4rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.85; }
+    button:active { opacity: 0.7; }
+
+    .btn-primary { background: #3a6fe8; color: #fff; }
+    .btn-danger  { background: transparent; color: #e05555; border: 1px solid #e05555; padding: 0.3rem 0.7rem; font-size: 0.78rem; font-weight: 400; }
+    .btn-add     { background: #2a6e3f; color: #fff; }
+
+    .error-msg {
+      color: #e05555;
+      font-size: 0.82rem;
+      margin-top: 0.5rem;
+      min-height: 1.2em;
+    }
+
+    /* Main panel */
+    #mainPanel { display: none; }
+
+    .add-row {
+      display: flex;
+      gap: 0.6rem;
+      margin-bottom: 1.8rem;
+    }
+
+    .add-row input {
+      flex: 1;
+      padding: 0.65rem 1rem;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.95rem;
+    }
+    .add-row input:focus { outline: none; border-color: #7eb0ff; }
+
+    .section-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #555;
+      margin-bottom: 0.75rem;
+    }
+
+    .count-badge {
+      background: #1e3a6e;
+      color: #7eb0ff;
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 20px;
+      margin-left: 0.5rem;
+      font-weight: 600;
+    }
+
+    ul#answerList {
+      list-style: none;
+    }
+
+    ul#answerList li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.7rem 1rem;
+      background: #1a1a1a;
+      border: 1px solid #222;
+      border-radius: 7px;
+      margin-bottom: 0.45rem;
+      gap: 1rem;
+      transition: background 0.15s;
+    }
+
+    ul#answerList li:hover { background: #1f1f1f; }
+
+    .answer-label {
+      flex: 1;
+      font-size: 0.9rem;
+      color: #ddd;
+    }
+
+    .loading {
+      color: #555;
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .logout-link {
+      font-size: 0.78rem;
+      color: #555;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-top: 2rem;
+      display: inline-block;
+    }
+    .logout-link:hover { color: #aaa; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>&#9670; 8-Ball Admin</h1>
+    <p class="subtitle">Manage the answer pool</p>
+
+    <!-- Login -->
+    <div id="loginPanel">
+      <label for="pwInput">Admin password</label>
+      <input type="password" id="pwInput" placeholder="Enter password" autocomplete="current-password" />
+      <button class="btn-primary" onclick="login()">Unlock</button>
+      <div class="error-msg" id="loginError"></div>
+    </div>
+
+    <!-- Main -->
+    <div id="mainPanel">
+      <div class="add-row">
+        <input type="text" id="newAnswer" placeholder="New answer..." maxlength="120" />
+        <button class="btn-add" onclick="addAnswer()">Add</button>
+      </div>
+
+      <div class="section-label">
+        Current answers <span class="count-badge" id="countBadge">0</span>
+      </div>
+
+      <ul id="answerList">
+        <li class="loading">Loading...</li>
+      </ul>
+
+      <span class="logout-link" onclick="logout()">Sign out</span>
+    </div>
+  </div>
+
+  <script>
+    let password = '';
+
+    function login() {
+      const pw = document.getElementById('pwInput').value;
+      if (!pw) return;
+      password = pw;
+      fetchAnswers(true);
+    }
+
+    function logout() {
+      password = '';
+      document.getElementById('mainPanel').style.display = 'none';
+      document.getElementById('loginPanel').style.display = 'block';
+      document.getElementById('pwInput').value = '';
+      document.getElementById('loginError').textContent = '';
+    }
+
+    async function fetchAnswers(isLogin = false) {
+      try {
+        const res = await fetch('/api/manage', {
+          headers: { 'x-admin-password': password }
+        });
+        if (res.status === 401) {
+          if (isLogin) document.getElementById('loginError').textContent = 'Wrong password.';
+          return;
+        }
+        const data = await res.json();
+        if (isLogin) {
+          document.getElementById('loginPanel').style.display = 'none';
+          document.getElementById('mainPanel').style.display = 'block';
+        }
+        renderList(data.answers);
+      } catch {
+        document.getElementById('loginError').textContent = 'Connection error.';
+      }
+    }
+
+    function renderList(answers) {
+      const list = document.getElementById('answerList');
+      document.getElementById('countBadge').textContent = answers.length;
+
+      if (answers.length === 0) {
+        list.innerHTML = '<li class="loading">No custom answers yet.</li>';
+        return;
+      }
+
+      list.innerHTML = answers.map(a => `
+        <li>
+          <span class="answer-label">${escapeHtml(a)}</span>
+          <button class="btn-danger" onclick="deleteAnswer(${JSON.stringify(a)})">Remove</button>
+        </li>
+      `).join('');
+    }
+
+    async function addAnswer() {
+      const input = document.getElementById('newAnswer');
+      const answer = input.value.trim();
+      if (!answer) return;
+
+      const res = await fetch('/api/manage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+        body: JSON.stringify({ answer })
+      });
+      const data = await res.json();
+      renderList(data.answers);
+      input.value = '';
+      input.focus();
+    }
+
+    async function deleteAnswer(answer) {
+      const res = await fetch('/api/manage', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': password },
+        body: JSON.stringify({ answer })
+      });
+      const data = await res.json();
+      renderList(data.answers);
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    document.getElementById('pwInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') login();
+    });
+
+    document.getElementById('newAnswer')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') addAnswer();
+    });
+  </script>
+</body>
+</html>

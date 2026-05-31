@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Magic 8-Ball</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at center, #1a1a2e 0%, #0d0d0d 100%);
+      font-family: 'Georgia', serif;
+      color: #fff;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-bottom: 2.5rem;
+    }
+
+    .ball-wrap {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      cursor: pointer;
+    }
+
+    .ball {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #444 0%, #111 40%, #000 100%);
+      box-shadow:
+        0 0 60px rgba(0,0,0,0.8),
+        inset 0 -10px 30px rgba(255,255,255,0.05),
+        inset 10px 10px 30px rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease;
+      position: relative;
+    }
+
+    .ball::before {
+      content: '8';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 5rem;
+      font-weight: bold;
+      color: rgba(255,255,255,0.08);
+      pointer-events: none;
+    }
+
+    .ball:hover { transform: scale(1.03); }
+    .ball:active { transform: scale(0.97); }
+
+    .ball.shaking {
+      animation: shake 0.5s ease;
+    }
+
+    @keyframes shake {
+      0%   { transform: translateX(0) rotate(0deg); }
+      15%  { transform: translateX(-12px) rotate(-4deg); }
+      30%  { transform: translateX(12px) rotate(4deg); }
+      45%  { transform: translateX(-8px) rotate(-2deg); }
+      60%  { transform: translateX(8px) rotate(2deg); }
+      75%  { transform: translateX(-4px) rotate(-1deg); }
+      90%  { transform: translateX(4px) rotate(1deg); }
+      100% { transform: translateX(0) rotate(0deg); }
+    }
+
+    .window {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, #1a3a6e, #0a1a3e 60%, #060e24);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(50,80,200,0.3);
+      position: relative;
+      z-index: 1;
+    }
+
+    .answer-text {
+      font-size: 0.72rem;
+      text-align: center;
+      color: #7eb0ff;
+      padding: 10px;
+      line-height: 1.35;
+      font-weight: bold;
+      letter-spacing: 0.03em;
+      text-shadow: 0 0 8px rgba(100,160,255,0.8);
+      opacity: 0;
+      transition: opacity 0.4s ease 0.3s;
+    }
+
+    .answer-text.visible { opacity: 1; }
+
+    .prompt {
+      margin-top: 2rem;
+      font-size: 0.85rem;
+      color: #666;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: opacity 0.3s;
+    }
+
+    .prompt.hidden { opacity: 0; }
+
+    .shine {
+      position: absolute;
+      top: 12%;
+      left: 18%;
+      width: 35%;
+      height: 20%;
+      background: radial-gradient(ellipse, rgba(255,255,255,0.12) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Ask the 8-Ball</h1>
+
+  <div class="ball-wrap" id="ballWrap">
+    <div class="ball" id="ball">
+      <div class="shine"></div>
+      <div class="window">
+        <div class="answer-text" id="answerText">&#9670;</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="prompt" id="prompt">Click to reveal your fate</p>
+
+  <script>
+    let answers = [];
+    let shaking = false;
+
+    async function loadAnswers() {
+      try {
+        const res = await fetch('/api/answers');
+        const data = await res.json();
+        answers = data.answers || [];
+      } catch {
+        answers = ["The spirits are silent.", "Try again.", "Unclear.", "Yes.", "No."];
+      }
+    }
+
+    function randomAnswer() {
+      return answers[Math.floor(Math.random() * answers.length)];
+    }
+
+    const ball = document.getElementById('ball');
+    const answerText = document.getElementById('answerText');
+    const prompt = document.getElementById('prompt');
+
+    document.getElementById('ballWrap').addEventListener('click', () => {
+      if (shaking || answers.length === 0) return;
+      shaking = true;
+
+      answerText.classList.remove('visible');
+      answerText.textContent = '◆';
+      prompt.classList.add('hidden');
+
+      ball.classList.add('shaking');
+
+      ball.addEventListener('animationend', () => {
+        ball.classList.remove('shaking');
+        answerText.textContent = randomAnswer();
+        answerText.classList.add('visible');
+        shaking = false;
+      }, { once: true });
+    });
+
+    loadAnswers();
+  </script>
+</body>
+</html>
